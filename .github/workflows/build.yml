@@ -1,0 +1,113 @@
+name: Build & Release
+
+on:
+  workflow_dispatch: {}
+  schedule:
+    - cron: '17 2 * * *'  # daily at 02:17 UTC
+  push:
+    branches: [ main, master ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java (for apktool/apksigner)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Install tools (apktool, Android cmdline-tools & build-tools)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y wget unzip jq
+          # apktool (use upstream release for reliability)
+          APKTOOL_VER=2.9.3
+          wget -q https://github.com/iBotPeaches/Apktool/releases/download/v${APKTOOL_VER}/apktool_${APKTOOL_VER}.jar -O apktool.jar
+          echo -e '#!/usr/bin/env bash\njava -jar "$(dirname "$0")/apktool.jar" "$@"' | sudo tee /usr/local/bin/apktool >/dev/null
+          sudo chmod +x /usr/local/bin/apktool
+
+          # Android cmdline-tools & build-tools for apksigner
+          ANDROID_HOME=$HOME/android-sdk
+          mkdir -p "$ANDROID_HOME" && cd "$ANDROID_HOME"
+          wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O clt.zip
+          unzip -q clt.zip -d cmdline-tools
+          mkdir -p cmdline-tools/latest
+          mv cmdline-tools/* cmdline-tools/latest/ || true
+          yes | cmdline-tools/latest/bin/sdkmanager --sdk_root="$ANDROID_HOME" "platform-tools" "build-tools;35.0.0"
+          echo "ANDROID_HOME=$ANDROID_HOME" >> $GITHUB_ENV
+          echo "$ANDROID_HOME/build-tools/35.0.0" >> $GITHUB_PATH
+
+      - name: Restore signing keystore
+        env:
+          ANDROID_KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_B64 }}
+        run: |
+          mkdir -p $HOME/.android
+          echo "$ANDROID_KEYSTORE_B64" | base64 -d > $HOME/.android/ci_keystore.jks
+          echo "ANDROID_KEYSTORE_PATH=$HOME/.android/ci_keystore.jks" >> $GITHUB_ENV
+
+      - name: Resolve upstream versions
+        id: ver
+        env:
+          TERMUX_ASSET_REGEX: ${{ vars.TERMUX_ASSET_REGEX }}
+          EMACS_SOURCEFORGE_PROJECT: ${{ vars.EMACS_SOURCEFORGE_PROJECT }}
+          EMACS_ASSET_REGEX: ${{ vars.EMACS_ASSET_REGEX }}
+          EMACS_DIRECT_URL: ${{ vars.EMACS_DIRECT_URL }}
+        run: |
+          python3 scripts/check_versions.py > versions.json
+          echo "versions=$(cat versions.json)" >> $GITHUB_OUTPUT
+          cat versions.json | jq -r '.termux.url,.emacs.url' > urls.txt
+
+      - name: Download Termux APK
+        id: dl_termux
+        run: |
+          TERMUX_URL=$(cat versions.json | jq -r '.termux.url')
+          python3 scripts/fetch_apk.py "$TERMUX_URL" termux_original.apk
+          echo "apk=termux_original.apk" >> $GITHUB_OUTPUT
+
+      - name: Download Emacs APK
+        id: dl_emacs
+        run: |
+          EMACS_URL=$(cat versions.json | jq -r '.emacs.url')
+          python3 scripts/fetch_apk.py "$EMACS_URL" emacs_original.apk
+          echo "apk=emacs_original.apk" >> $GITHUB_OUTPUT
+
+      - name: Patch Emacs for sharedUserId
+        run: |
+          bash scripts/patch_emacs_manifest.sh emacs_original.apk emacs_for_termux.apk
+
+      - name: Sign APKs
+        env:
+          ANDROID_KEYSTORE_ALIAS: ${{ secrets.ANDROID_KEYSTORE_ALIAS }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        run: |
+          bash scripts/sign_apk.sh termux_original.apk termux_signed.apk
+          bash scripts/sign_apk.sh emacs_for_termux.apk emacs_for_termux_signed.apk
+
+      - name: Compute version tag
+        id: tag
+        run: |
+          TERMUX_TAG=$(cat versions.json | jq -r '.termux.tag')
+          DATE_TAG=$(date -u +"%Y%m%d-%H%M")
+          echo "tag=v${TERMUX_TAG}-${DATE_TAG}" >> $GITHUB_OUTPUT
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.tag.outputs.tag }}
+          name: Auto build ${{ steps.tag.outputs.tag }}
+          draft: false
+          prerelease: false
+          files: |
+            termux_signed.apk
+            emacs_for_termux_signed.apk
+          body: |
+            Termux: ${{ fromJson(steps.ver.outputs.versions).termux.url }}\n
+            Emacs:  ${{ fromJson(steps.ver.outputs.versions).emacs.url }}\n
+            Signed with shared keystore for sharedUserId compatibility.
