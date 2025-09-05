@@ -1,5 +1,4 @@
 name: Build & Release
-environment: ANDROID_KEYSTORE_B64
 
 on:
   workflow_dispatch: {}
@@ -10,6 +9,7 @@ on:
 
 jobs:
   build:
+    environment: ANDROID_KEYSTORE_B64
     runs-on: ubuntu-latest
     permissions:
       contents: write
