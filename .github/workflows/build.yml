@@ -37,10 +37,8 @@ jobs:
           ANDROID_HOME=$HOME/android-sdk
           mkdir -p "$ANDROID_HOME" && cd "$ANDROID_HOME"
           wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O clt.zip
-          unzip -q clt.zip -d cmdline-tools-tmp
-          mkdir -p cmdline-tools/latest
-          mv cmdline-tools-tmp/* cmdline-tools/latest/ || true
-          yes | cmdline-tools/latest/bin/sdkmanager --sdk_root="$ANDROID_HOME" "platform-tools" "build-tools;35.0.0"
+          unzip -q clt.zip
+          yes | cmdline-tools/bin/sdkmanager --sdk_root="$ANDROID_HOME" "platform-tools" "build-tools;35.0.0"
           echo "ANDROID_HOME=$ANDROID_HOME" >> $GITHUB_ENV
           echo "$ANDROID_HOME/build-tools/35.0.0" >> $GITHUB_PATH
 
