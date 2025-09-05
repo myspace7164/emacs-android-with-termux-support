@@ -26,14 +26,21 @@ jobs:
       - name: Install tools (apktool, Android cmdline-tools & build-tools)
         run: |
           sudo apt-get update
-          sudo apt-get install -y wget unzip jq apktool sdkmanager
+          sudo apt-get install -y wget unzip jq
+          # apktool (use upstream release for reliability)
+          APKTOOL_VER=2.9.3
+          wget -q https://github.com/iBotPeaches/Apktool/releases/download/v${APKTOOL_VER}/apktool_${APKTOOL_VER}.jar -O apktool.jar
+          echo -e '#!/usr/bin/env bash\njava -jar "$(dirname "$0")/apktool.jar" "$@"' | sudo tee /usr/local/bin/apktool >/dev/null
+          sudo chmod +x /usr/local/bin/apktool
 
-          # Android cmdline-tools
+          # Android cmdline-tools & build-tools for apksigner
           ANDROID_HOME=$HOME/android-sdk
-
-          # Install build-tools & platform-tools
-          yes | sdkmanager --sdk_root="$ANDROID_HOME" "platform-tools" "build-tools;35.0.0"
-
+          mkdir -p "$ANDROID_HOME" && cd "$ANDROID_HOME"
+          wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O clt.zip
+          unzip -q clt.zip -d cmdline-tools
+          mkdir -p cmdline-tools/latest
+          mv cmdline-tools/* cmdline-tools/latest/ || true
+          yes | cmdline-tools/latest/bin/sdkmanager --sdk_root="$ANDROID_HOME" "platform-tools" "build-tools;35.0.0"
           echo "ANDROID_HOME=$ANDROID_HOME" >> $GITHUB_ENV
           echo "$ANDROID_HOME/build-tools/35.0.0" >> $GITHUB_PATH
 
