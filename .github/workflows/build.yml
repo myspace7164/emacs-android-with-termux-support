@@ -58,6 +58,7 @@ jobs:
           EMACS_ASSET_REGEX: ${{ vars.EMACS_ASSET_REGEX }}
           EMACS_DIRECT_URL: "https://sourceforge.net/projects/android-ports-for-gnu-emacs/files/emacs-30.2-29-arm64-v8a.apk/download"
         run: |
+          echo ${{ vars.EMACS_DIRECT_URL }}
           python3 scripts/check_versions.py > versions.json
           echo "versions=$(cat versions.json)" >> $GITHUB_OUTPUT
           cat versions.json | jq -r '.termux.url,.emacs.url' > urls.txt
