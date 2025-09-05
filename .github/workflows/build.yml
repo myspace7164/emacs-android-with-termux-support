@@ -85,6 +85,8 @@ jobs:
           ANDROID_KEYSTORE_ALIAS: ${{ secrets.ANDROID_KEYSTORE_ALIAS }}
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
         run: |
+          echo "Alias set? ${ANDROID_KEYSTORE_ALIAS:+yes}"
+          echo "Password set? ${ANDROID_KEYSTORE_PASSWORD:+yes}"
           bash scripts/sign_apk.sh termux_original.apk termux_signed.apk
           bash scripts/sign_apk.sh emacs_for_termux.apk emacs_for_termux_signed.apk
 
