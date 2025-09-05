@@ -50,6 +50,11 @@ jobs:
           echo "$ANDROID_KEYSTORE_B64" | base64 -d > $HOME/.android/ci_keystore.jks
           echo "ANDROID_KEYSTORE_PATH=$HOME/.android/ci_keystore.jks" >> $GITHUB_ENV
 
+      - name: Export signing secrets
+          run: |
+            echo "ANDROID_KEYSTORE_ALIAS=${{ secrets.ANDROID_KEYSTORE_ALIAS }}" >> $GITHUB_ENV
+            echo "ANDROID_KEYSTORE_PASSWORD=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" >> $GITHUB_ENV
+
       - name: Resolve upstream versions
         id: ver
         env:
@@ -58,7 +63,6 @@ jobs:
           EMACS_ASSET_REGEX: ${{ vars.EMACS_ASSET_REGEX }}
           EMACS_DIRECT_URL: "https://sourceforge.net/projects/android-ports-for-gnu-emacs/files/emacs-30.2-29-arm64-v8a.apk/download"
         run: |
-          echo ${{ vars.EMACS_DIRECT_URL }}
           python3 scripts/check_versions.py > versions.json
           echo "versions=$(cat versions.json)" >> $GITHUB_OUTPUT
           cat versions.json | jq -r '.termux.url,.emacs.url' > urls.txt
@@ -86,8 +90,6 @@ jobs:
           ANDROID_KEYSTORE_ALIAS: ${{ secrets.ANDROID_KEYSTORE_ALIAS }}
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
         run: |
-          echo "Alias set? ${ANDROID_KEYSTORE_ALIAS:+yes}"
-          echo "Password set? ${ANDROID_KEYSTORE_PASSWORD:+yes}"
           bash scripts/sign_apk.sh termux_original.apk termux_signed.apk
           bash scripts/sign_apk.sh emacs_for_termux.apk emacs_for_termux_signed.apk
 
