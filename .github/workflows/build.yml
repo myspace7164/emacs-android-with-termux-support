@@ -29,8 +29,8 @@ jobs:
           sudo apt-get install -y wget unzip jq
           # apktool (use upstream release for reliability)
           APKTOOL_VER=2.9.3
-          wget -q https://github.com/iBotPeaches/Apktool/releases/download/v${APKTOOL_VER}/apktool_${APKTOOL_VER}.jar -O apktool.jar
-          echo -e '#!/usr/bin/env bash\njava -jar "$(dirname "$0")/apktool.jar" "$@"' | sudo tee /usr/local/bin/apktool >/dev/null
+          wget -q https://github.com/iBotPeaches/Apktool/releases/download/v${APKTOOL_VER}/apktool_${APKTOOL_VER}.jar -O /usr/local/bin/apktool.jar
+          echo -e '#!/usr/bin/env bash\njava -jar /usr/local/bin/apktool.jar "$@"' | sudo tee /usr/local/bin/apktool >/dev/null
           sudo chmod +x /usr/local/bin/apktool
 
           # Android cmdline-tools & build-tools for apksigner
