@@ -51,9 +51,9 @@ jobs:
           echo "ANDROID_KEYSTORE_PATH=$HOME/.android/ci_keystore.jks" >> $GITHUB_ENV
 
       - name: Export signing secrets
-          run: |
-            echo "ANDROID_KEYSTORE_ALIAS=${{ secrets.ANDROID_KEYSTORE_ALIAS }}" >> $GITHUB_ENV
-            echo "ANDROID_KEYSTORE_PASSWORD=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" >> $GITHUB_ENV
+        run: |
+          echo "ANDROID_KEYSTORE_ALIAS=${{ secrets.ANDROID_KEYSTORE_ALIAS }}" >> $GITHUB_ENV
+          echo "ANDROID_KEYSTORE_PASSWORD=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" >> $GITHUB_ENV
 
       - name: Resolve upstream versions
         id: ver
