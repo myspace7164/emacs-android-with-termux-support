@@ -41,8 +41,8 @@ jobs:
           unzip -q clt.zip -d latest
           rm clt.zip
 
-          # Add sdkmanager to PATH
-          echo "$ANDROID_HOME/cmdline-tools/latest/bin" >> $GITHUB_PATH
+          # Add sdkmanager to PATH (real location)
+          echo "$ANDROID_HOME/cmdline-tools/latest/cmdline-tools/bin" >> $GITHUB_PATH
 
           # Install build-tools & platform-tools
           yes | sdkmanager --sdk_root="$ANDROID_HOME" "platform-tools" "build-tools;35.0.0"
