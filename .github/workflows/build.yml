@@ -5,11 +5,12 @@ on:
   schedule:
     - cron: '17 2 * * *'  # daily at 02:17 UTC
   push:
-    branches: [ main, master ]
+    branches:
+      - main
 
 jobs:
   build:
-    environment: ANDROID_KEYSTORE_B64
+    environment: Build & Release
     runs-on: ubuntu-latest
     permissions:
       contents: write
